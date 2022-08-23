@@ -48,10 +48,13 @@ The middleware being used to forward auth is defined in `./config/dynamic.yml` w
 If you encounter any errors feel free to contact me.
 
 ## Bad Gateway 
-If you get a "bad gateway" error you will receive a URL like this: 
+If you got a "bad gateway" error you will receive a URL like this: 
 
 https://example.yourdomain.com/_oauth?error=invalid_scope&error_description=Invalid+scopes%3A+openid+profile+email+groups&state= 
 
 To fix this error you have to assign the correct client scopes to your client. In our case you first have to create two scopes not being given by default.  \
 Create the `openid` and `groups` scope (Settings can be default).
 Next asign scopes `openid`, `groups`,`profile` and `email` to the used client.
+
+## Not authorized
+Check whether you have set the email for your user and try again
