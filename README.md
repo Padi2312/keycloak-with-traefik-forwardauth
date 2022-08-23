@@ -36,8 +36,8 @@ The middleware being used to forward auth is defined in `./config/dynamic.yml` w
 10. `docker compose up -d forwardauth`
 
 ### Secure a service with keycloak
-11.  Add `keycloak@file` as middleware to the service
-    - *Example:* `- "traefik.http.routers.whoami.middlewares=keycloak@file,secHeaders@file"`
+11.  Add `keycloak@file` as middleware to the service\
+    -  Example: `- "traefik.http.routers.whoami.middlewares=keycloak@file,secHeaders@file"` \
     - **Note:** The middleware is already added to our example service
 12. `docker-compose up -d`
 
