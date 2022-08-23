@@ -25,7 +25,7 @@ The middleware being used to forward auth is defined in `./config/dynamic.yml` w
 6. Setup a realm with a client and a user 
    - For more information how to setup a realm please see: https://www.keycloak.org/getting-started/getting-started-docker
    - **Note:** The access type of client have to be `confidential` to get a client secrect
-   - **Note:** The user must have a email address otherwise the forwardauth will not work
+   - ### **IMPORTANT: The user must have a email address otherwise the forwardauth will not work**
 7. In client settings you have to set `Valid Redirect URIs` with the url of your service
    - *Example:* https://yourdomain.com/*
    - It's important to add asterix symbol at the end
