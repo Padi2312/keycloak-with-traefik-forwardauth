@@ -1,0 +1,91 @@
+services:
+  traefik:
+    image: traefik:v2.8
+    container_name: traefik
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/traefik.yml:/etc/traefik/traefik.yml
+      - ./config/dynamic.yml:/etc/traefik/dynamic.yml
+      - ./config/acme.json:/etc/traefik/acme.json
+      - ./logs:/logs
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.$DOMAIN`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=default"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth,secHeaders@file"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=foo:$$2y$$05$$m8N3/Ruo6HER7xmSIPEc9eIBS4HapP6q5Rrfb2Wpclhl7jRD592rm" # CHANGE USERNAME AND PASSWORD! (user: foo , password: bar)
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    networks:
+      - traefik
+      - default
+    ports:
+      - "80:80"
+      - "443:443"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:18.0.2 
+    environment:
+      # For persistence please use a database
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      # This is required to run keycloak behind traefik
+      # See: https://www.keycloak.org/server/reverseproxy 
+      KC_PROXY: edge
+      KC_HOSTNAME: keycloak.$DOMAIN
+      KC_HTTPS_PROTOCOLS: TLSv1.2,TLSv1.3
+    command: start-dev
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.tls=true"
+      - "traefik.http.routers.keycloak.tls.certresolver=default"
+      - "traefik.http.routers.keycloak.entrypoints=websecure"
+      - traefik.http.routers.keycloak.rule=Host(`keycloak.$DOMAIN`)
+      - traefik.http.routers.keycloak.middlewares=secHeaders@file
+      - traefik.http.services.keycloak.loadbalancer.server.port=8080
+    networks:
+      - traefik
+
+  forwardauth:
+    # Forward auth container
+    image: mesosphere/traefik-forward-auth
+    depends_on:
+      - traefik
+    environment:
+      - SECRET=USE_ANY_RANDOM_TEXT_HERE # Change it to a random generated string
+      - PROVIDER_URI=https://keycloak.$DOMAIN/realms/$REALM
+      - CLIENT_ID=$CLIENT_ID
+      - CLIENT_SECRET=$CLIENT_SECRET
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forwardauth.entrypoints=websecure"
+      - "traefik.http.routers.forwardauth.tls=true"
+      - "traefik.http.routers.forwardauth.tls.certresolver=default"
+      - "traefik.http.routers.forwardauth.rule=Path(`/_oauth`)"
+      - "traefik.http.routers.forwardauth.middlewares=keycloak@file,secHeaders@file"
+      - "traefik.http.services.forwardauth.loadbalancer.server.port=4181"
+    networks:
+      traefik:
+
+  secured-example:
+    image: traefik/whoami
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.rule=Host(`example.$DOMAIN`)"
+      - "traefik.http.routers.whoami.tls=true"
+      - "traefik.http.routers.whoami.tls.certresolver=default"
+      - "traefik.http.routers.whoami.middlewares=keycloak@file,secHeaders@file"
+      - "traefik.http.services.whoami-service.loadbalancer.server.port=80"
+    networks:
+      traefik:
+
+
+
+networks:
+  traefik:
+    external: true
+    name: traefik
