@@ -51,7 +51,7 @@ services:
 
   forwardauth:
     # Forward auth container
-    image: mesosphere/traefik-forward-auth
+    image: mesosphere/traefik-forward-auth:3.1.0
     depends_on:
       - traefik
     environment:
